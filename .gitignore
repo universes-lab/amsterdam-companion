@@ -1,0 +1,52 @@
+# ===============================
+# Python cache
+# ===============================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.bat
+
+# ===============================
+# Environment and Virtual Envs
+# ===============================
+.env
+venv*/
+.sync/
+
+# ===============================
+# Logs and Data
+# ===============================
+*.log
+logs/
+sessions/
+sessions_test/
+backup_*/
+# projects/
+models/
+*.tmp
+*.swp
+*.swo
+*.DS_Store
+Thumbs.db
+
+# ===============================
+# Binary / static files (handled locally)
+# ===============================
+static/*.png
+static/*.jpg
+static/*.jpeg
+static/*.gif
+static/*.mp4
+static/*.mov
+
+*.dll
+*.lib
+*.exe
+*.bin
+.pytest_cache/
+
+# ===============================
+# Hugging Face / Dataset local stuff (optional)
+# ===============================
+*.hf  

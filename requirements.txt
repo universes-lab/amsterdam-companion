@@ -1,0 +1,6 @@
+aiogram
+pydantic-settings
+sherpa-onnx
+ctranslate2
+piper-tts
+python-dotenv
