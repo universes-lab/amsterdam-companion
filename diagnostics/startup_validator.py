@@ -10,5 +10,6 @@ def validate_environment():
     models_dir = Path("./models")
     assert (models_dir / "stt").exists(), "STT models directory not found"
     assert (models_dir / "tts").exists(), "TTS models directory not found"
+    assert (models_dir / "translation" / "nllb-600m-int8" / "model.bin").exists(), "NLLB model not found"
     
     print("[OK] Startup validation passed.")

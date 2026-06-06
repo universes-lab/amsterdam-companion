@@ -25,6 +25,7 @@ async def run_pipeline(audio_bytes: bytes, user_id: str) -> bytes:
     text = await transcribe(preprocessed_audio, lang="nl")
     
     # Translate
+    # Updated to use real translation
     translated_text = await translate(text, src="nl", dst="ru")
     
     # Speak
