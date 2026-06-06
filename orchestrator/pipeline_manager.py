@@ -1,5 +1,6 @@
 import asyncio
 import time
+from pathlib import Path
 from audio.preprocessor import preprocess
 from stt.sherpa_onnx_wrapper import transcribe
 from translation.nllb_wrapper import translate
@@ -8,31 +9,50 @@ from router.deterministic_router import route
 from orchestrator.response_builder import build_response
 from session.session_manager import SessionManager
 
+LATENCY_LOG = Path("logs/latency.log")
+LATENCY_LOG.parent.mkdir(exist_ok=True)
+
+async def log_latency(step: str, duration_ms: float):
+    with open(LATENCY_LOG, "a") as f:
+        f.write(f"{time.time()},{step},{duration_ms:.2f}\n")
+
 async def process_live_voice(audio_bytes: bytes, user_id: str) -> bytes:
     print(f"[Pipeline] Processing live voice for {user_id}")
     
     # Wrapping in timeout as per safety requirements
     try:
-        return await asyncio.wait_for(
+        start_time = time.perf_counter()
+        result = await asyncio.wait_for(
             run_pipeline(audio_bytes, user_id),
             timeout=60
         )
+        total_ms = (time.perf_counter() - start_time) * 1000
+        await log_latency("total_pipeline", total_ms)
+        return result
     except asyncio.TimeoutError:
         print(f"[Pipeline] Task timed out for {user_id}")
         return b""
 
 async def run_pipeline(audio_bytes: bytes, user_id: str) -> bytes:
     # Preprocess audio
+    start = time.perf_counter()
     preprocessed_audio = await preprocess(audio_bytes)
+    await log_latency("preprocess", (time.perf_counter() - start) * 1000)
     
     # Transcribe
+    start = time.perf_counter()
     text = await transcribe(preprocessed_audio, lang="nl")
+    await log_latency("transcribe", (time.perf_counter() - start) * 1000)
     
     # Translate
+    start = time.perf_counter()
     translated_text = await translate(text, src="nl", dst="ru")
+    await log_latency("translate", (time.perf_counter() - start) * 1000)
     
     # Speak
+    start = time.perf_counter()
     audio_response = await speak(translated_text, lang="ru")
+    await log_latency("speak", (time.perf_counter() - start) * 1000)
     
     print(f"[Pipeline] Finished for {user_id}.")
     return audio_response

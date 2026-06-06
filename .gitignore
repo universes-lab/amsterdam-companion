@@ -1,9 +1,5 @@
-# ===============================
-# Python cache
-# ===============================
+logs/
+temp_audio/
+.env
 __pycache__/
 *.pyc
-*.log
-.env
-venv*/
-.history/
