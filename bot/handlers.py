@@ -1,22 +1,34 @@
 import asyncio
 from aiogram import types, Router
 from orchestrator.task_registry import TaskRegistry
-from orchestrator.pipeline_manager import process_live_voice
+from orchestrator.pipeline_manager import process_message
 
 router = Router()
 task_registry = TaskRegistry()
 
-@router.message(lambda msg: msg.text == "/live")
-async def cmd_live(message: types.Message):
+@router.message(lambda msg: msg.text and msg.text.startswith("/"))
+async def cmd_handler(message: types.Message):
     user_id = str(message.from_user.id)
-    task = asyncio.create_task(process_live_voice(user_id))
-    task_registry.register(user_id, task)
-    await message.answer("Live mode started.")
+    # This now handles both text and potential voice if integrated
+    response, _, _ = await process_message(user_id, message.text)
+    await message.answer(response["text"], reply_markup=response.get("reply_markup"))
 
-@router.message(lambda msg: msg.text == "/learn")
-async def cmd_learn(message: types.Message):
-    await message.answer("Learn mode not implemented yet.")
+@router.message(lambda msg: msg.voice)
+async def voice_handler(message: types.Message):
+    user_id = str(message.from_user.id)
+    file = await message.bot.get_file(message.voice.file_id)
+    voice_bytes = await message.bot.download_file(file.file_path)
+    
+    # Process voice
+    response, _, _ = await process_message(user_id, "/live", voice_bytes=voice_bytes.getvalue())
+    
+    if response.get("voice"):
+        await message.answer_voice(types.BufferedInputFile(response["voice"], filename="response.ogg"))
+    else:
+        await message.answer(response["text"])
 
-@router.message(lambda msg: msg.text == "/status")
-async def cmd_status(message: types.Message):
-    await message.answer("RAM: 0 Mb, Models: Not loaded")
+@router.message(lambda msg: msg.text)
+async def text_handler(message: types.Message):
+    user_id = str(message.from_user.id)
+    response, _, _ = await process_message(user_id, message.text)
+    await message.answer(response["text"], reply_markup=response.get("reply_markup"))
