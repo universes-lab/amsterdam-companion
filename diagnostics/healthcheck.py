@@ -1,9 +1,7 @@
 import psutil
 import asyncio
 from datetime import datetime
-from stt.sherpa_onnx_wrapper import STTEngine
-from translation.nllb_wrapper import TranslationEngine
-from tts.piper_wrapper import TTSEngine
+import sys
 
 class HealthChecker:
     def __init__(self):
@@ -15,10 +13,18 @@ class HealthChecker:
         }
     
     async def check_models(self):
-        # проверка загрузки моделей через их движки
-        self.model_status["stt"] = STTEngine._instance is not None
-        self.model_status["translation"] = TranslationEngine._instance is not None
-        self.model_status["tts"] = TTSEngine._instance is not None
+        # проверка инициализации через глобальные переменные синглтонов
+        try:
+            from stt.sherpa_onnx_wrapper import _stt_engine
+            from translation.nllb_wrapper import _translation_engine
+            from tts.piper_wrapper import _tts_engine
+            
+            self.model_status["stt"] = _stt_engine is not None
+            self.model_status["translation"] = _translation_engine is not None and _translation_engine._initialized
+            self.model_status["tts"] = _tts_engine is not None
+        except Exception as e:
+            print(f"[HealthCheck] Error checking models: {e}")
+            
         return self.model_status
     
     async def get_ram_usage(self):

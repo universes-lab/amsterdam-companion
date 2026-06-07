@@ -3,6 +3,12 @@ import os
 import subprocess
 from pathlib import Path
 from dotenv import load_dotenv
+from config.settings import (
+    STT_MODEL_PATH, 
+    TTS_MODEL_PATH, 
+    TRANSLATION_MODEL_PATH,
+    PROJECT_ROOT
+)
 
 def check_ffmpeg():
     # Allow specifying FFMPEG_PATH via environment
@@ -17,15 +23,37 @@ def check_ffmpeg():
         return False
     return True
 
+def validate_models():
+    """Проверяет наличие всех моделей по абсолютным путям"""
+    checks = [
+        (STT_MODEL_PATH / "tiny-encoder.int8.onnx", "STT encoder"),
+        (STT_MODEL_PATH / "tiny-decoder.int8.onnx", "STT decoder"),
+        (STT_MODEL_PATH / "tiny-tokens.txt", "STT tokens"),
+        (TRANSLATION_MODEL_PATH / "model.bin", "Translation model"),
+        (TTS_MODEL_PATH / "nl_BE-nathalie-medium.onnx", "TTS Dutch"),
+        (TTS_MODEL_PATH / "ru_RU-irina-medium.onnx", "TTS Russian"),
+        (TTS_MODEL_PATH / "en_US-amy-medium.onnx", "TTS English"),
+    ]
+    
+    for path, name in checks:
+        if not path.exists():
+            raise FileNotFoundError(f"❌ {name}: {path} не найден")
+        print(f"✅ {name}: {path}")
+
 def validate_environment():
     load_dotenv()
+    
+    # 1. System check
     assert shutil.which("ffmpeg") or check_ffmpeg(), "ffmpeg not found in PATH"
     assert os.getenv("TELEGRAM_TOKEN"), "TELEGRAM_TOKEN not set in .env"
     
-    # Check for models
-    models_dir = Path("./models")
-    assert (models_dir / "stt").exists(), "STT models directory not found"
-    assert (models_dir / "tts").exists(), "TTS models directory not found"
-    assert (models_dir / "translation" / "nllb-600m-int8" / "model.bin").exists(), "NLLB model not found"
+    # 2. Project structure check
+    assert (PROJECT_ROOT / "models").exists(), "models directory not found"
+    
+    # 3. Specific models check
+    validate_models()
     
     print("[OK] Startup validation passed.")
+
+if __name__ == "__main__":
+    validate_environment()

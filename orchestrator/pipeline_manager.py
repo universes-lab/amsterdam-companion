@@ -8,9 +8,10 @@ from tts.piper_wrapper import speak
 from router.deterministic_router import route
 from orchestrator.response_builder import build_response
 from session.session_manager import SessionManager
+from config.settings import LOGS_PATH
 
-LATENCY_LOG = Path("logs/latency.log")
-LATENCY_LOG.parent.mkdir(exist_ok=True)
+LATENCY_LOG = LOGS_PATH / "latency.log"
+LATENCY_LOG.parent.mkdir(parents=True, exist_ok=True)
 
 async def log_latency(step: str, duration_ms: float):
     with open(LATENCY_LOG, "a") as f:
@@ -65,6 +66,10 @@ async def process_message(user_id: str, message_text: str, voice_bytes: bytes = 
     mode, params = route(message_text, session.get_mode())
     router_latency = (time.time() - start_router) * 1000
     
+    # Update session mode if changed by command
+    if message_text and message_text.startswith("/"):
+        session.set_mode(mode)
+    
     if voice_bytes:
         # голосовой перевод (LIVE)
         preprocessed = await preprocess(voice_bytes)
@@ -77,8 +82,17 @@ async def process_message(user_id: str, message_text: str, voice_bytes: bytes = 
         response = build_response("live", translated, tts_audio)
         rb_latency = (time.time() - start_rb) * 1000
     else:
-        # текстовый запрос (LEARN)
-        if mode == "learn":
+        # текстовый запрос
+        if mode == "live":
+            # Если это просто команда переключения в live
+            if message_text == "/live":
+                 response = build_response("live", "Режим Live активирован. Присылай голосовые сообщения!", None)
+            else:
+                 # Текстовый перевод в режиме live
+                 translated = await translate(message_text, src="ru", dst="nl")
+                 response = build_response("live", translated, None)
+            rb_latency = 0
+        elif mode == "learn":
             # простая эмуляция ответа на текстовый запрос
             explanation = await translate(message_text, src="ru", dst="nl")
             translated = message_text  # без перевода

@@ -1,6 +1,7 @@
 import sherpa_onnx
 import asyncio
 from pathlib import Path
+from config.settings import STT_MODEL_PATH
 
 class STTEngine:
     _instance = None
@@ -12,11 +13,10 @@ class STTEngine:
     
     def _init(self):
         # Path assumes models are in models/stt/sherpa-onnx-whisper-tiny
-        model_path = Path("models/stt/sherpa-onnx-whisper-tiny")
         self.recognizer = sherpa_onnx.OfflineRecognizer.from_whisper(
-            encoder=str(model_path / "tiny-encoder.int8.onnx"),
-            decoder=str(model_path / "tiny-decoder.int8.onnx"),
-            tokens=str(model_path / "tiny-tokens.txt"),
+            encoder=str(STT_MODEL_PATH / "tiny-encoder.int8.onnx"),
+            decoder=str(STT_MODEL_PATH / "tiny-decoder.int8.onnx"),
+            tokens=str(STT_MODEL_PATH / "tiny-tokens.txt"),
             language="nl",
             task="transcribe",
             num_threads=4,
@@ -36,9 +36,16 @@ class STTEngine:
         self.recognizer.decode_streams([stream])
         return stream.result.text
 
-# Interface wrapper
-stt_engine = STTEngine()
+# Lazy singleton helper
+_stt_engine = None
+
+def get_stt_engine():
+    global _stt_engine
+    if _stt_engine is None:
+        _stt_engine = STTEngine()
+    return _stt_engine
 
 async def transcribe(audio_bytes: bytes, lang: str = "nl") -> str:
     """STT Interface for Sherpa-ONNX."""
-    return await stt_engine.transcribe(audio_bytes, lang)
+    engine = get_stt_engine()
+    return await engine.transcribe(audio_bytes, lang)

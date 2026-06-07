@@ -1,32 +1,37 @@
 import ctranslate2
 import asyncio
 from pathlib import Path
+from config.settings import TRANSLATION_MODEL_PATH
 
 class TranslationEngine:
     _instance = None
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            cls._instance._init()
+            cls._instance._initialized = False
         return cls._instance
     
     def _init(self):
-        model_path = Path("models/translation/nllb-600m-int8")
-        # In a real scenario, this would load the model.
-        # For testing, we mock if model doesn't exist, but instruction implies it will exist.
-        if model_path.exists():
-            self.translator = ctranslate2.Translator(str(model_path), device="cpu")
+        if self._initialized:
+            return
+            
+        if TRANSLATION_MODEL_PATH.exists():
+            # Use absolute path from settings
+            self.translator = ctranslate2.Translator(str(TRANSLATION_MODEL_PATH), device="cpu")
         else:
             self.translator = None
-            print("[Warning] Translation model not found, using mock.")
+            print(f"[Warning] Translation model not found at {TRANSLATION_MODEL_PATH}, using mock.")
             
         self.target_prefix = {
             "nl": "nld_Latn",
             "ru": "rus_Cyrl",
             "en": "eng_Latn"
         }
+        self._initialized = True
     
     async def translate(self, text: str, src: str, dst: str) -> str:
+        if not self._initialized:
+            self._init()
         return await asyncio.to_thread(self._sync_translate, text, src, dst)
     
     def _sync_translate(self, text: str, src: str, dst: str):
@@ -37,20 +42,24 @@ class TranslationEngine:
         target_lang = self.target_prefix[dst]
         
         # NLLB requires specifying source/target in tokens
-        results = self.translator.translate(
-            [text],
-            source_lang=source_lang,
-            target_lang=target_lang,
-            max_batch_size=1
+        results = self.translator.translate_batch(
+            [[text]],
+            target_prefix=[[target_lang]]
         )
         
-        # CT2 returns tokens/scores, need to reconstruct string
-        # Assuming typical CT2 output structure
-        return "".join(results[0].hypotheses[0])
+        # Reconstruct string from tokens (CT2 style)
+        return "".join(results[0].hypotheses[0]).replace(" ", " ").strip()
 
-# Interface wrapper
-translation_engine = TranslationEngine()
+# Lazy singleton helper
+_translation_engine = None
+
+def get_translation_engine():
+    global _translation_engine
+    if _translation_engine is None:
+        _translation_engine = TranslationEngine()
+    return _translation_engine
 
 async def translate(text: str, src: str, dst: str) -> str:
     """Translation Interface for NLLB."""
-    return await translation_engine.translate(text, src, dst)
+    engine = get_translation_engine()
+    return await engine.translate(text, src, dst)
