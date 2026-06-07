@@ -11,14 +11,14 @@ class STTEngine:
         return cls._instance
     
     def _init(self):
-        # Path assumes models are in models/stt/whisper-tiny.en
-        model_path = Path("models/stt/whisper-tiny.en")
-        # Ensure path exists, if not, logic will fail gracefully or need setup
-        self.recognizer = sherpa_onnx.OfflineRecognizer.from_transducer(
-            encoder=str(model_path / "encoder.onnx"),
-            decoder=str(model_path / "decoder.onnx"),
-            joiner=str(model_path / "joiner.onnx"),
-            tokens=str(model_path / "tokens.txt"),
+        # Path assumes models are in models/stt/sherpa-onnx-whisper-tiny
+        model_path = Path("models/stt/sherpa-onnx-whisper-tiny")
+        self.recognizer = sherpa_onnx.OfflineRecognizer.from_whisper(
+            encoder=str(model_path / "tiny-encoder.int8.onnx"),
+            decoder=str(model_path / "tiny-decoder.int8.onnx"),
+            tokens=str(model_path / "tiny-tokens.txt"),
+            language="nl",
+            task="transcribe",
             num_threads=4,
         )
     

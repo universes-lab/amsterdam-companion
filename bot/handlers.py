@@ -19,8 +19,6 @@ Status: {status['status']}
     await message.reply(text)
 
 @router.message(lambda msg: msg.text and msg.text.startswith("/"))
-...
-
 async def cmd_handler(message: types.Message):
     user_id = str(message.from_user.id)
     # This now handles both text and potential voice if integrated
