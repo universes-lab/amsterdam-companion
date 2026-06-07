@@ -21,6 +21,10 @@ class STTEngine:
             task="transcribe",
             num_threads=4,
         )
+        self._initialized = True
+
+    def is_loaded(self):
+        return self._initialized
     
     async def transcribe(self, audio_bytes: bytes, lang: str = "nl") -> str:
         # Warmup: первый вызов может быть медленным

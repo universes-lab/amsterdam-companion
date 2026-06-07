@@ -3,6 +3,11 @@ import asyncio
 from datetime import datetime
 import sys
 
+# Import engines without forcing load
+from stt.sherpa_onnx_wrapper import _stt_engine as stt_singleton
+from translation.nllb_wrapper import _translation_engine as translation_singleton
+from tts.piper_wrapper import _tts_engine as tts_singleton
+
 class HealthChecker:
     def __init__(self):
         self.start_time = datetime.now()
@@ -15,13 +20,9 @@ class HealthChecker:
     async def check_models(self):
         # проверка инициализации через глобальные переменные синглтонов
         try:
-            from stt.sherpa_onnx_wrapper import _stt_engine
-            from translation.nllb_wrapper import _translation_engine
-            from tts.piper_wrapper import _tts_engine
-            
-            self.model_status["stt"] = _stt_engine is not None
-            self.model_status["translation"] = _translation_engine is not None and _translation_engine._initialized
-            self.model_status["tts"] = _tts_engine is not None
+            self.model_status["stt"] = stt_singleton is not None and stt_singleton.is_loaded()
+            self.model_status["translation"] = translation_singleton is not None and translation_singleton.is_loaded()
+            self.model_status["tts"] = tts_singleton is not None and tts_singleton.is_loaded("nl")
         except Exception as e:
             print(f"[HealthCheck] Error checking models: {e}")
             

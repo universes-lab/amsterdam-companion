@@ -36,9 +36,14 @@ def validate_models():
     ]
     
     for path, name in checks:
-        if not path.exists():
-            raise FileNotFoundError(f"❌ {name}: {path} не найден")
-        print(f"✅ {name}: {path}")
+        try:
+            # os.access is less intrusive than path.exists() on some Windows configs
+            if not os.access(path, os.R_OK):
+                raise PermissionError(f"Файл {path} недоступен для чтения")
+            print(f"✅ {name}: {path}")
+        except Exception as e:
+            print(f"❌ {name}: Ошибка доступа к {path}: {e}")
+            raise
 
 def validate_environment():
     load_dotenv()

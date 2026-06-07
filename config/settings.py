@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     ffmpeg_path: str = "ffmpeg"
 
     class Config:
-        env_file = ".env"
+        env_file = str(PROJECT_ROOT / ".env")
         extra = "allow"
 
 settings = Settings()

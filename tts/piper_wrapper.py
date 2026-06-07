@@ -38,6 +38,9 @@ class TTSEngine:
         voice.session.synthesize(text, output)
         return output.getvalue()
 
+    def is_loaded(self, lang="nl"):
+        return lang in self._voices
+
 # Lazy singleton helper
 _tts_engine = None
 

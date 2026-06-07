@@ -50,6 +50,9 @@ class TranslationEngine:
         # Reconstruct string from tokens (CT2 style)
         return "".join(results[0].hypotheses[0]).replace(" ", " ").strip()
 
+    def is_loaded(self):
+        return self._initialized and self.translator is not None
+
 # Lazy singleton helper
 _translation_engine = None
 
