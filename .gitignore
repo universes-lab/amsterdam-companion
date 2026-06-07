@@ -1,5 +1,9 @@
-logs/
-temp_audio/
+# Ignore model files
+models/**
+
+# Ignore temp files
 .env
 __pycache__/
 *.pyc
+logs/*.log
+temp_audio/*

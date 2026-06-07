@@ -2,8 +2,14 @@ import shutil
 import os
 import subprocess
 from pathlib import Path
+from dotenv import load_dotenv
 
 def check_ffmpeg():
+    # Allow specifying FFMPEG_PATH via environment
+    ffmpeg_path = os.getenv("FFMPEG_PATH")
+    if ffmpeg_path and os.path.exists(ffmpeg_path):
+        return True
+        
     try:
         subprocess.run(["ffmpeg", "-version"], capture_output=True, check=True)
     except (subprocess.SubprocessError, FileNotFoundError):
@@ -12,6 +18,7 @@ def check_ffmpeg():
     return True
 
 def validate_environment():
+    load_dotenv()
     assert shutil.which("ffmpeg") or check_ffmpeg(), "ffmpeg not found in PATH"
     assert os.getenv("TELEGRAM_TOKEN"), "TELEGRAM_TOKEN not set in .env"
     
