@@ -16,7 +16,7 @@ RAM: {status['ram_mb']:.0f} MB
 Models: STT={'✅' if status['models']['stt'] else '❌'} | TR={'✅' if status['models']['translation'] else '❌'} | TTS={'✅' if status['models']['tts'] else '❌'}
 Status: {status['status']}
 """
-    await message.reply(text)
+    await message.answer(text)
 
 @router.message(lambda msg: msg.text and msg.text.startswith("/"))
 async def cmd_handler(message: types.Message):

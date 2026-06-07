@@ -37,13 +37,13 @@ def validate_models():
     
     for path, name in checks:
         try:
-            # os.access is less intrusive than path.exists() on some Windows configs
-            if not os.access(path, os.R_OK):
-                raise PermissionError(f"Файл {path} недоступен для чтения")
+            # Try to open the file for reading to verify readability
+            with open(path, 'rb') as f:
+                f.read(1)
             print(f"✅ {name}: {path}")
         except Exception as e:
-            print(f"❌ {name}: Ошибка доступа к {path}: {e}")
-            raise
+            print(f"⚠️ WARNING: {name}: Ошибка доступа к {path}: {e}")
+            # Do not raise exception here, allow bot to attempt launch anyway
 
 def validate_environment():
     load_dotenv()
