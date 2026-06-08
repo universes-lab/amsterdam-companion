@@ -1,4 +1,6 @@
 COMMAND_MAP = {
+    "/help": ("help", None),
+    "/list": ("list", None),
     "/live": ("live", None),
     "/learn": ("learn", None),
     "/lang ru→nl": ("live", {"target_lang": "nl", "source_lang": "ru"}),
