@@ -1,9 +1,43 @@
-# Ignore model files
-models/**
+# Модели (НЕ загружать на GitHub — гигабайты!)
+models/
+!models/.gitkeep
 
-# Ignore temp files
+# Логи
+logs/
+!logs/.gitkeep
+*.log
+
+# Переменные окружения (токены!)
 .env
+.env.local
+
+# Python
 __pycache__/
-*.pyc
-logs/*.log
-temp_audio/*
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+
+# Временные файлы
+temp/
+!temp_audio/.gitkeep
+tmp/
+*.ogg
+*.wav
+*.pcm
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# CTranslate2 временные файлы
+models/translation/nllb-200-distilled-600M-original/
