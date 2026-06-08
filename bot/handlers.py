@@ -32,11 +32,15 @@ async def voice_handler(message: types.Message):
     voice_bytes = await message.bot.download_file(file.file_path)
     
     # Process voice
+    print(f"[HANDLER] Voice received: {len(voice_bytes.getvalue())} bytes")
     response, _, _ = await process_message(user_id, "/live", voice_bytes=voice_bytes.getvalue())
+    print(f"[HANDLER] Response voice size: {len(response.get('voice')) if response.get('voice') else 0} bytes")
     
     if response.get("voice"):
         await message.answer_voice(types.BufferedInputFile(response["voice"], filename="response.ogg"))
+        print("[HANDLER] Voice sent successfully")
     else:
+        print("[HANDLER] No voice to send - pipeline returned empty")
         await message.answer(response["text"])
 
 @router.message(lambda msg: msg.text)

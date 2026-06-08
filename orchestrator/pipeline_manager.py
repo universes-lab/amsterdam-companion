@@ -74,12 +74,34 @@ async def process_message(user_id: str, message_text: str, voice_bytes: bytes = 
     
     if voice_bytes:
         # голосовой перевод (LIVE)
-        preprocessed = await preprocess(voice_bytes)
-        text = await transcribe(preprocessed, lang="nl") # Added lang="nl"
-        print(f"[Pipeline] Transcription: '{text}'")
-        translated = await translate(text, src="nl", dst="ru")
-        print(f"[Pipeline] Translated: '{translated}'")
-        tts_audio = await speak(translated, lang="ru")
+        print(f"[PIPELINE] 1. Received {len(voice_bytes)} bytes")
+        try:
+            preprocessed = await preprocess(voice_bytes)
+            print(f"[PIPELINE] 2. Preprocessed: {len(preprocessed)} bytes PCM")
+        except Exception as e:
+            print(f"[PIPELINE] Preprocess failed: {e}")
+            raise
+            
+        try:
+            text = await transcribe(preprocessed, lang="nl")
+            print(f"[PIPELINE] 3. STT result: '{text}'")
+        except Exception as e:
+            print(f"[PIPELINE] STT failed: {e}")
+            raise
+            
+        try:
+            translated = await translate(text, src="nl", dst="ru")
+            print(f"[PIPELINE] 4. Translation result: '{translated}'")
+        except Exception as e:
+            print(f"[PIPELINE] Translation failed: {e}")
+            raise
+            
+        try:
+            tts_audio = await speak(translated, lang="ru")
+            print(f"[PIPELINE] 5. TTS generated {len(tts_audio)} bytes")
+        except Exception as e:
+            print(f"[PIPELINE] TTS failed: {e}")
+            raise
         
         # Measure response builder latency
         start_rb = time.time()

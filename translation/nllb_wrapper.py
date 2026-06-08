@@ -44,14 +44,18 @@ class TranslationEngine:
         if not self.translator:
             return f"[MOCK_TRANSLATION] {text}"
             
+        source_lang = self.target_prefix[src]
         target_lang = self.target_prefix[dst]
         
-        # Tokenize input
+        # Set source language on tokenizer
+        self.tokenizer.src_lang = source_lang
+        
+        # Proper NLLB tokenization using tokenizer.encode
         tokens = self.tokenizer.convert_ids_to_tokens(self.tokenizer.encode(text))
         
         # NLLB requires specifying target in prefix
         results = self.translator.translate_batch(
-            [[text]],
+            [tokens],
             target_prefix=[[target_lang]]
         )
         
@@ -63,7 +67,15 @@ class TranslationEngine:
             hypotheses = hypotheses[1:]
             
         # Proper decoding
-        translated_text = self.tokenizer.decode(self.tokenizer.convert_tokens_to_ids(hypotheses), skip_special_tokens=True)
+        translated_text = self.tokenizer.decode(
+            self.tokenizer.convert_tokens_to_ids(hypotheses), 
+            skip_special_tokens=True
+        ).strip()
+        
+        # Remove leading punctuation leak if any (like "- " in Dutch to Russian)
+        if translated_text.startswith("- ") and not text.startswith("-"):
+            translated_text = translated_text[2:]
+            
         return translated_text
 
     def is_loaded(self):

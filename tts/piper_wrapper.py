@@ -23,8 +23,8 @@ class TTSEngine:
             voice_file = self._get_voice_filename(lang)
             voice_path = TTS_MODEL_PATH / voice_file
             
-            # Load the voice and cache it
-            voice = await asyncio.to_thread(piper.Voice.load, str(voice_path))
+            # Use PiperVoice instead of Voice
+            voice = await asyncio.to_thread(piper.PiperVoice.load, str(voice_path))
             self._voices[lang] = voice
     
     async def speak(self, text: str, lang: str = "nl") -> bytes:
@@ -33,9 +33,14 @@ class TTSEngine:
     
     def _sync_speak(self, text, lang):
         import io
+        import wave
         output = io.BytesIO()
         voice = self._voices[lang]
-        voice.session.synthesize(text, output)
+        
+        # Use synthesize_wav with wave writer for proper audio generation
+        with wave.open(output, "wb") as wav_file:
+            voice.synthesize_wav(text, wav_file)
+            
         return output.getvalue()
 
     def is_loaded(self, lang="nl"):

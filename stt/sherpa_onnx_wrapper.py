@@ -12,19 +12,25 @@ class STTEngine:
         return cls._instance
     
     def _init(self):
-        # Path assumes models are in models/stt/sherpa-onnx-whisper-tiny
-        self.recognizer = sherpa_onnx.OfflineRecognizer.from_whisper(
-            encoder=str(STT_MODEL_PATH / "tiny-encoder.int8.onnx"),
-            decoder=str(STT_MODEL_PATH / "tiny-decoder.int8.onnx"),
-            tokens=str(STT_MODEL_PATH / "tiny-tokens.txt"),
-            language="nl",
-            task="transcribe",
-            num_threads=4,
-        )
-        self._initialized = True
+        self._initialized = False
+        try:
+            # Path assumes models are in models/stt/whisper_runtime (copy to avoid lock issues)
+            model_path = STT_MODEL_PATH.parent / "whisper_runtime"
+            self.recognizer = sherpa_onnx.OfflineRecognizer.from_whisper(
+                encoder=str(model_path / "tiny-encoder.int8.onnx"),
+                decoder=str(model_path / "tiny-decoder.int8.onnx"),
+                tokens=str(model_path / "tiny-tokens.txt"),
+                language="nl",
+                task="transcribe",
+                num_threads=4,
+            )
+            self._initialized = True
+        except Exception as e:
+            print(f"[Error] Failed to initialize STTEngine: {e}")
+            self.recognizer = None
 
     def is_loaded(self):
-        return self._initialized
+        return self._initialized and self.recognizer is not None
     
     async def transcribe(self, audio_bytes: bytes, lang: str = "nl") -> str:
         # Warmup: первый вызов может быть медленным
