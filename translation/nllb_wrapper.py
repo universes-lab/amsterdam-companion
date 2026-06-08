@@ -47,13 +47,14 @@ class TranslationEngine:
         )
         
         # CT2 returns tokens. NLLB subwords often start with ' ' (Unicode U+2581)
-        # We need to join them and replace the subword space char.
         hypotheses = results[0].hypotheses[0]
         
         # Remove target prefix if model leaked it
-        if hypotheses[0] == target_lang:
+        if hypotheses and hypotheses[0] == target_lang:
             hypotheses = hypotheses[1:]
             
+        # Join tokens and handle NLLB subword separator
+        # Replace U+2581 ( ) with space ' '
         translated_text = "".join(hypotheses).replace(" ", " ").strip()
         return translated_text
 
