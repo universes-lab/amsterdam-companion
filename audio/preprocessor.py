@@ -18,8 +18,8 @@ async def preprocess_voice(audio_bytes: bytes) -> bytes:
 
     output_path = tempfile.mktemp(suffix=".pcm")
 
-    # Используем путь к ffmpeg из настроек
-    cmd = f'"{settings.ffmpeg_path}" -i {shlex.quote(input_path)} -ar 16000 -ac 1 -f s16le {shlex.quote(output_path)} -y'
+    # Используем путь к ffmpeg из настроек, оборачивая пути в двойные кавычки (совместимо с Windows)
+    cmd = f'"{settings.ffmpeg_path}" -i "{input_path}" -ar 16000 -ac 1 -f s16le "{output_path}" -y'
 
     try:
         # ЗАМЕНА: вызов в отдельном потоке, НЕ асинхронный subprocess
