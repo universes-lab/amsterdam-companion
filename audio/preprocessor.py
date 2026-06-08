@@ -1,40 +1,53 @@
 import asyncio
 import tempfile
+import subprocess
 import shlex
-import time
-import os
 from pathlib import Path
 from config.settings import settings
 
 async def preprocess_voice(audio_bytes: bytes) -> bytes:
-    # Telegram voice OGG/Opus → 16kHz mono PCM (raw)
-    
-    # Create temp files but close them immediately so ffmpeg can open them
-    f_in = tempfile.NamedTemporaryFile(suffix=".ogg", delete=False)
-    f_in.write(audio_bytes)
-    f_in.close()
-    
-    f_out = tempfile.NamedTemporaryFile(suffix=".pcm", delete=False)
-    f_out.close()
-    
+    """
+    Конвертирует Telegram OGG/Opus в 16kHz mono PCM.
+    Запускает ffmpeg СИНХРОННО в отдельном потоке, чтобы не ломать event loop.
+    Это решает проблему с Access Violation на Windows 10.
+    """
+    with tempfile.NamedTemporaryFile(suffix=".ogg", delete=False) as f_in:
+        f_in.write(audio_bytes)
+        f_in.flush()
+        input_path = f_in.name
+
+    output_path = tempfile.mktemp(suffix=".pcm")
+
+    # Используем путь к ffmpeg из настроек
+    cmd = f'"{settings.ffmpeg_path}" -i {shlex.quote(input_path)} -ar 16000 -ac 1 -f s16le {shlex.quote(output_path)} -y'
+
     try:
-        # Use ffmpeg path from settings
-        cmd = f'"{settings.ffmpeg_path}" -i {shlex.quote(f_in.name)} -ar 16000 -ac 1 -f s16le {shlex.quote(f_out.name)} -y'
-        proc = await asyncio.create_subprocess_shell(cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
-        await asyncio.wait_for(proc.wait(), timeout=10)
-        
-        pcm_data = Path(f_out.name).read_bytes()
+        # ЗАМЕНА: вызов в отдельном потоке, НЕ асинхронный subprocess
+        process = await asyncio.to_thread(
+            subprocess.run,
+            cmd,
+            capture_output=True,
+            text=True,
+            shell=True,
+            timeout=10  # Жесткий таймаут 10 секунд
+        )
+
+        if process.returncode != 0:
+            raise RuntimeError(f"ffmpeg failed: {process.stderr}")
+
+        # Читаем PCM данные (синхронно, быстро)
+        pcm_data = Path(output_path).read_bytes()
         return pcm_data
+
     finally:
-        # Robust cleanup
-        for f in [f_in.name, f_out.name]:
-            for _ in range(5):
-                try:
-                    if os.path.exists(f):
-                        os.unlink(f)
-                    break
-                except PermissionError:
-                    await asyncio.sleep(0.1)
+        # Очистка временных файлов (ДАЖЕ при ошибке)
+        for path in [input_path, output_path]:
+            try:
+                p = Path(path)
+                if p.exists():
+                    p.unlink()
+            except OSError:
+                pass
 
 async def preprocess(audio_bytes: bytes) -> bytes:
     """Audio preprocessing (ffmpeg wrapper)."""
