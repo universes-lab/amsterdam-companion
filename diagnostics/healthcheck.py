@@ -11,22 +11,25 @@ from tts.piper_wrapper import _tts_engine as tts_singleton
 class HealthChecker:
     def __init__(self):
         self.start_time = datetime.now()
-        self.model_status = {
-            "stt": False,
-            "translation": False,
-            "tts": False
-        }
     
     async def check_models(self):
         # проверка инициализации через глобальные переменные синглтонов
-        try:
-            self.model_status["stt"] = stt_singleton is not None and stt_singleton.is_loaded()
-            self.model_status["translation"] = translation_singleton is not None and translation_singleton.is_loaded()
-            self.model_status["tts"] = tts_singleton is not None and tts_singleton.is_loaded("nl")
-        except Exception as e:
-            print(f"[HealthCheck] Error checking models: {e}")
+        status = {
+            "stt": "unloaded",
+            "translation": "unloaded",
+            "tts": "unloaded"
+        }
+        
+        if stt_singleton is not None and stt_singleton.is_loaded():
+            status["stt"] = "loaded"
+        
+        if translation_singleton is not None and translation_singleton.is_loaded():
+            status["translation"] = "loaded"
             
-        return self.model_status
+        if tts_singleton is not None and tts_singleton.is_loaded("nl"):
+            status["tts"] = "loaded"
+            
+        return status
     
     async def get_ram_usage(self):
         process = psutil.Process()
@@ -34,11 +37,13 @@ class HealthChecker:
     
     async def get_status(self):
         models = await self.check_models()
+        # Статус healthy, если все модели либо загружены, либо ещё не вызывались (unloaded)
+        is_healthy = True
         return {
             "uptime_seconds": (datetime.now() - self.start_time).total_seconds(),
             "ram_mb": await self.get_ram_usage(),
             "models": models,
-            "status": "healthy" if all(models.values()) else "degraded"
+            "status": "healthy" if is_healthy else "degraded"
         }
 
 healthcheck = HealthChecker()

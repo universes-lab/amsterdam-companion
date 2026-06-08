@@ -38,17 +38,24 @@ class TranslationEngine:
         if not self.translator:
             return f"[MOCK_TRANSLATION] {text}"
             
-        source_lang = self.target_prefix[src]
         target_lang = self.target_prefix[dst]
         
-        # NLLB requires specifying source/target in tokens
+        # NLLB requires specifying target in prefix
         results = self.translator.translate_batch(
             [[text]],
             target_prefix=[[target_lang]]
         )
         
-        # Reconstruct string from tokens (CT2 style)
-        return "".join(results[0].hypotheses[0]).replace(" ", " ").strip()
+        # CT2 returns tokens. NLLB subwords often start with ' ' (Unicode U+2581)
+        # We need to join them and replace the subword space char.
+        hypotheses = results[0].hypotheses[0]
+        
+        # Remove target prefix if model leaked it
+        if hypotheses[0] == target_lang:
+            hypotheses = hypotheses[1:]
+            
+        translated_text = "".join(hypotheses).replace(" ", " ").strip()
+        return translated_text
 
     def is_loaded(self):
         return self._initialized and self.translator is not None
