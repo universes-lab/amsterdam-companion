@@ -93,14 +93,18 @@ async def process_message(user_id: str, message_text: str, voice_bytes: bytes = 
                  response = build_response("live", translated, None)
             rb_latency = 0
         elif mode == "learn":
-            # простая эмуляция ответа на текстовый запрос
-            explanation = await translate(message_text, src="ru", dst="nl")
-            translated = message_text  # без перевода
-            
-            # Measure response builder latency
-            start_rb = time.time()
-            response = build_response("learn", translated, None, explanation)
-            rb_latency = (time.time() - start_rb) * 1000
+            # Если это просто команда переключения в learn
+            if message_text == "/learn":
+                 response = build_response("learn", "Режим обучения активирован. Присылай фразу для перевода!", None)
+            else:
+                # простая эмуляция ответа на текстовый запрос
+                explanation = await translate(message_text, src="ru", dst="nl")
+                translated = message_text  # без перевода
+                
+                # Measure response builder latency
+                start_rb = time.time()
+                response = build_response("learn", translated, None, explanation)
+                rb_latency = (time.time() - start_rb) * 1000
         elif mode == "help":
             response = {"text": "Доступные команды:\n/live - Режим перевода\n/learn - Режим обучения\n/status - Статус системы\n/lang ru→nl - Перевод с RU на NL\n/help - Помощь\n/list - Список возможностей"}
             rb_latency = 0
