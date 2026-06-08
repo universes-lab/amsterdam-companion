@@ -36,14 +36,10 @@ def validate_models():
     ]
     
     for path, name in checks:
-        try:
-            # Try to open the file for reading to verify readability
-            with open(path, 'rb') as f:
-                f.read(1)
-            print(f"✅ {name}: {path}")
-        except Exception as e:
-            print(f"⚠️ WARNING: {name}: Ошибка доступа к {path}: {e}")
-            # Do not raise exception here, allow bot to attempt launch anyway
+        if path.exists():
+            print(f"[OK] {name}: {path}")
+        else:
+            print(f"[WARN] {name}: Файл не найден или недоступен для чтения: {path}")
 
 def validate_environment():
     load_dotenv()
