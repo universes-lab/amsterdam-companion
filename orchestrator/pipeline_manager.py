@@ -70,12 +70,16 @@ async def process_message(user_id: str, message_text: str, voice_bytes: bytes = 
     if message_text and message_text.startswith("/"):
         session.set_mode(mode)
     
+    rb_latency = 0.0 # Initialize variable
+    
     if voice_bytes:
         # голосовой перевод (LIVE)
         preprocessed = await preprocess(voice_bytes)
-        text = await transcribe(preprocessed)
+        text = await transcribe(preprocessed, lang="nl") # Added lang="nl"
+        print(f"[Pipeline] Transcription: '{text}'")
         translated = await translate(text, src="nl", dst="ru")
-        tts_audio = await speak(translated)
+        print(f"[Pipeline] Translated: '{translated}'")
+        tts_audio = await speak(translated, lang="ru")
         
         # Measure response builder latency
         start_rb = time.time()

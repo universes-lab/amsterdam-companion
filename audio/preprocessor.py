@@ -2,6 +2,7 @@ import asyncio
 import tempfile
 import shlex
 import time
+import os
 from pathlib import Path
 from config.settings import settings
 
