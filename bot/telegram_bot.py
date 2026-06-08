@@ -3,6 +3,10 @@ import logging
 import sys
 import os
 
+# Prevent OpenMP conflict crashes on Windows (PyTorch + ONNXRuntime)
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+os.environ["OMP_NUM_THREADS"] = "1"
+
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
