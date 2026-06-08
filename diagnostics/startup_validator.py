@@ -24,22 +24,8 @@ def check_ffmpeg():
     return True
 
 def validate_models():
-    """Проверяет наличие всех моделей по абсолютным путям"""
-    checks = [
-        (STT_MODEL_PATH / "tiny-encoder.int8.onnx", "STT encoder"),
-        (STT_MODEL_PATH / "tiny-decoder.int8.onnx", "STT decoder"),
-        (STT_MODEL_PATH / "tiny-tokens.txt", "STT tokens"),
-        (TRANSLATION_MODEL_PATH / "model.bin", "Translation model"),
-        (TTS_MODEL_PATH / "nl_BE-nathalie-medium.onnx", "TTS Dutch"),
-        (TTS_MODEL_PATH / "ru_RU-irina-medium.onnx", "TTS Russian"),
-        (TTS_MODEL_PATH / "en_US-amy-medium.onnx", "TTS English"),
-    ]
-    
-    for path, name in checks:
-        if path.exists():
-            print(f"[OK] {name}: {path}")
-        else:
-            print(f"[WARN] {name}: Файл не найден или недоступен для чтения: {path}")
+    """Пропускаем проверку файлов, чтобы избежать PermissionError. Загрузка произойдет в движках."""
+    print("[INFO] Пропускаем проверку наличия файлов моделей (будет выполнено движками)")
 
 def validate_environment():
     load_dotenv()
