@@ -2,6 +2,30 @@
 
 Telegram bot for learning Dutch.
 
+## Supervisor Layer (Phase 7A)
+
+AI Supervisor для анализа статистики и генерации отчётов.
+
+### Статус
+🟢 **Phase 7A.0** — инфраструктура создана (ожидание реализации)
+
+### Структура
+supervisor/
+├── engine/ # Логика анализа и отчётов
+├── reports/ # Сгенерированные отчёты
+├── archive/ # Архив старых memory.json
+├── recommendations/ # Рекомендации Advisor (Phase 7B)
+├── models/ # GGUF модели (отдельно от MVP!)
+├── tests/ # Тесты Supervisor
+├── events.jsonl # События от MVP (append-only)
+├── memory.json # Агрегированная статистика
+└── supervisor.log # Логи Supervisor
+
+### Команды (после реализации)
+- `/supervisor report` — еженедельный отчёт
+- `/supervisor stats` — краткая сводка
+- `/supervisor analyze` — внеочередной анализ
+
 ## Setup
 
 1. Copy `.env.example` to `.env` and fill in the values.

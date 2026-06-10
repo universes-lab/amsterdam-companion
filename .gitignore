@@ -41,3 +41,14 @@ Thumbs.db
 
 # CTranslate2 временные файлы
 models/translation/nllb-200-distilled-600M-original/
+
+# Supervisor Layer logs and artifacts
+supervisor/supervisor.log
+supervisor/archive/
+supervisor/reports/*.md
+!supervisor/reports/.gitkeep
+supervisor/recommendations/*.json
+!supervisor/recommendations/.gitkeep
+
+# GGUF models (too large for git)
+supervisor/models/*.gguf
