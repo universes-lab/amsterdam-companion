@@ -1,6 +1,8 @@
 import asyncio
 import time
+import json
 from pathlib import Path
+from datetime import datetime
 from audio.preprocessor import preprocess
 from stt.sherpa_onnx_wrapper import transcribe
 from translation.nllb_wrapper import translate
@@ -9,6 +11,22 @@ from router.deterministic_router import route
 from orchestrator.response_builder import build_response
 from session.session_manager import SessionManager
 from config.settings import LOGS_PATH
+
+SUPERVISOR_EVENTS_FILE = Path("supervisor/events.jsonl")
+
+def _log_supervisor_event(event_type: str, **kwargs):
+    """Записывает событие в events.jsonl для Supervisor."""
+    try:
+        SUPERVISOR_EVENTS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        event = {
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "type": event_type,
+            **kwargs
+        }
+        with open(SUPERVISOR_EVENTS_FILE, "a", encoding="utf-8") as f:
+            f.write(json.dumps(event, ensure_ascii=False) + "\n")
+    except Exception as e:
+        print(f"Failed to log supervisor event: {e}")
 
 LATENCY_LOG = LOGS_PATH / "latency.log"
 LATENCY_LOG.parent.mkdir(parents=True, exist_ok=True)
@@ -107,6 +125,7 @@ async def process_message(user_id: str, message_text: str, voice_bytes: bytes = 
         start_rb = time.time()
         response = build_response("live", translated, tts_audio)
         rb_latency = (time.time() - start_rb) * 1000
+        _log_supervisor_event("live_request", direction="ru→nl", latency_ms=rb_latency)
     else:
         # текстовый запрос
         if mode == "live":
@@ -117,6 +136,7 @@ async def process_message(user_id: str, message_text: str, voice_bytes: bytes = 
                  # Текстовый перевод в режиме live
                  translated = await translate(message_text, src="ru", dst="nl")
                  response = build_response("live", translated, None)
+                 _log_supervisor_event("live_request", direction="ru→nl", latency_ms=0)
             rb_latency = 0
         elif mode == "learn":
             # Если это просто команда переключения в learn
@@ -131,6 +151,7 @@ async def process_message(user_id: str, message_text: str, voice_bytes: bytes = 
                 start_rb = time.time()
                 response = build_response("learn", translated, None, explanation)
                 rb_latency = (time.time() - start_rb) * 1000
+                _log_supervisor_event("learn_request", action="repeat", phrase_category="general")
         elif mode == "help":
             response = {"text": "Доступные команды:\n/live - Режим перевода\n/learn - Режим обучения\n/status - Статус системы\n/lang ru→nl - Перевод с RU на NL\n/help - Помощь\n/list - Список возможностей"}
             rb_latency = 0
