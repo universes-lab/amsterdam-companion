@@ -180,20 +180,22 @@ class SupervisorEngine:
         
         if not events:
             logger.info("No new events to process")
-            return
+        else:
+            # Агрегируем события
+            stats = self.event_reader.aggregate_events(events)
+            
+            # Обновляем memory.json
+            self.memory_manager.update(stats)
+            
+            # Сохраняем новый offset
+            state_file.parent.mkdir(parents=True, exist_ok=True)
+            with open(state_file, 'w') as f:
+                json.dump({"last_event_offset": new_offset}, f)
+            
+            logger.info(f"Processed {len(events)} events, memory updated")
         
-        # Агрегируем события
-        stats = self.event_reader.aggregate_events(events)
-        
-        # Обновляем memory.json
-        self.memory_manager.update(stats)
-        
-        # Сохраняем новый offset
-        state_file.parent.mkdir(parents=True, exist_ok=True)
-        with open(state_file, 'w') as f:
-            json.dump({"last_event_offset": new_offset}, f)
-        
-        logger.info(f"Processed {len(events)} events, memory updated")
+        # Ротация памяти (если нужно)
+        self.memory_manager.rotate_if_needed(max_age_days=90)
     
     def get_status(self) -> dict:
         """Возвращает текущий статус Supervisor."""

@@ -106,6 +106,8 @@ def main():
     parser = argparse.ArgumentParser(description="AI Supervisor for amsterdam-companion")
     parser.add_argument("--update-memory", action="store_true",
                         help="Обновить memory.json из events.jsonl и выйти")
+    parser.add_argument("--schedule", action="store_true",
+                        help="Запустить планировщик задач")
     args = parser.parse_args()
     
     logger.info("=" * 50)
@@ -119,7 +121,50 @@ def main():
     memory = load_memory()
     offset, event_count = load_events()
     
-    if args.update_memory:
+    if args.schedule:
+        import schedule
+        import time
+        
+        def scheduled_update():
+            logger.info("Scheduled update started")
+            # Обновляем memory.json из events.jsonl
+            from supervisor.data.event_reader import EventReader
+            from supervisor.data.memory_manager import MemoryManager
+            
+            events_file = Path("supervisor/events.jsonl")
+            memory_file = Path("supervisor/memory.json")
+            archive_dir = Path("supervisor/archive")
+            
+            reader = EventReader(events_file)
+            manager = MemoryManager(memory_file, archive_dir)
+            
+            # Читаем состояние (offset)
+            state_file = Path("supervisor/state.json")
+            last_offset = 0
+            if state_file.exists():
+                with open(state_file, 'r') as f:
+                    state = json.load(f)
+                    last_offset = state.get("last_event_offset", 0)
+            
+            events, new_offset = reader.read_new_events(last_offset)
+            if events:
+                stats = reader.aggregate_events(events)
+                manager.update(stats)
+                with open(state_file, 'w') as f:
+                    json.dump({"last_event_offset": new_offset}, f)
+                logger.info(f"Updated memory with {len(events)} events")
+            else:
+                logger.info("No new events")
+        
+        # Запланировать на 03:00
+        schedule.every().day.at("03:00").do(scheduled_update)
+        logger.info("Scheduler started, next update at 03:00")
+        
+        while True:
+            schedule.run_pending()
+            time.sleep(60)
+            
+    elif args.update_memory:
         logger.info("Update mode: will process events and update memory")
         # TODO: Phase 7A.6 — полноценная обработка
         logger.info(f"Events offset: {offset}, count: {event_count}")
