@@ -69,7 +69,7 @@ def main():
                 del self.llm
                 self.llm = None
                 
-        def analyze(self, prompt):
+        def analyze(self, prompt, system_prompt=None):
             # В тестовом режиме возвращаем заглушку JSON, которую validator пропустит
             return """{
                 "period": {"from": "2026-06-01", "to": "2026-06-08"},

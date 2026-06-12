@@ -1,6 +1,7 @@
 import json
 import logging
 import time
+import yaml
 from pathlib import Path
 from typing import Optional, Dict, Any
 from datetime import datetime
@@ -33,11 +34,67 @@ class SupervisorEngine:
         self.event_reader = EventReader(events_file)
         self.memory_manager = MemoryManager(memory_file, archive_dir)
         
+        # Загрузка промпта
+        self.system_prompt = self._load_system_prompt()
+        
         self._loaded = False
         self._last_analysis = None
         self._last_report = None
         self._error_count = 0
-    
+
+    def _load_system_prompt(self) -> str:
+        """Загружает системный промпт из YAML."""
+        prompt_path = Path("supervisor/prompts/system_prompt.yaml")
+        if not prompt_path.exists():
+            logger.warning("System prompt not found, using minimal default")
+            return "You are an AI supervisor. Analyze data and return JSON."
+        
+        try:
+            with open(prompt_path, 'r', encoding='utf-8') as f:
+                prompt_config = yaml.safe_load(f)
+            
+            # Извлекаем компоненты
+            constitution = prompt_config.get('constitution', {})
+            identity = prompt_config.get('identity', {})
+            analysis_rules = prompt_config.get('analysis_rules', {})
+            
+            # Формируем текстовый промпт для модели
+            prompt_parts = []
+            
+            # 1. Конституция (высший приоритет)
+            rules = constitution.get('mandatory_rules', [])
+            if rules:
+                prompt_parts.append("## CONSTITUTION (absolute priority)")
+                for rule in rules:
+                    prompt_parts.append(f"- {rule.get('rule', '')}")
+            
+            # 2. Идентичность
+            prompt_parts.append(f"\n## IDENTITY\nRole: {identity.get('role', 'AI Supervisor')}")
+            prompt_parts.append(f"Personality: {identity.get('personality', 'Inspector')}")
+            prompt_parts.append(f"Operating Mode: {identity.get('operating_mode', 'Offline asynchronous analysis')}")
+            
+            # 3. Аналитические правила
+            if analysis_rules:
+                prompt_parts.append("\n## ANALYSIS RULES")
+                for key, value in analysis_rules.items():
+                    if isinstance(value, list):
+                        prompt_parts.append(f"- {key}: {', '.join(value)}")
+                    else:
+                        prompt_parts.append(f"- {key}: {value}")
+            
+            # 4. Формат вывода
+            output_format = prompt_config.get('output_format', {})
+            prompt_parts.append(f"\n## OUTPUT FORMAT\n{output_format.get('format', 'json')}")
+            prompt_parts.append(f"Required fields: {output_format.get('required_fields', [])}")
+            
+            final_prompt = "\n".join(prompt_parts)
+            logger.info(f"System prompt loaded ({len(final_prompt)} chars)")
+            return final_prompt
+            
+        except Exception as e:
+            logger.error(f"Failed to load system prompt: {e}")
+            return "You are an AI supervisor. Analyze data and return JSON."
+
     def load(self) -> None:
         """Загружает LLM и инициализирует компоненты."""
         logger.info("Loading SupervisorEngine...")
@@ -54,54 +111,22 @@ class SupervisorEngine:
     
     def _build_prompt(self, memory: Dict[str, Any]) -> str:
         """Формирует промпт для модели на основе memory.json."""
-        period = memory.get("period", {})
+        # ... (здесь используется старый код сборки промпта) ...
+        # ВНИМАНИЕ: Для Phase 7B.1 этот метод должен быть обновлен, 
+        # чтобы формировать только ДАННЫЕ, так как системный промпт теперь отделен.
         
-        # Адаптируем под структуру memory.json из MemoryManager
-        total = memory.get("total_requests", 0)
-        live_pct = round(memory.get("live_mode_requests", 0) / max(total, 1) * 100)
-        learn_pct = round(memory.get("learn_mode_requests", 0) / max(total, 1) * 100)
-        
-        prompt = f"""Ты — AI Supervisor для нидерландского языкового помощника.
-
-Данные для анализа за период {period.get('from', 'N/A')} - {period.get('to', 'N/A')}:
-
-Использование:
-- Всего запросов: {total}
-- LIVE Mode: {live_pct}%
-- LEARNING Mode: {learn_pct}%
-
-Ошибки:
-- STT failures: {memory.get('stt_failures', 0)}
-- Translation failures: {memory.get('translation_failures', 0)}
-- TTS failures: {memory.get('tts_failures', 0)}
-
-Повторяемые фразы: {json.dumps(memory.get('phrases_repeated', {}), ensure_ascii=False)}
-
-Система:
-- Средняя латентность: {memory.get('avg_latency_ms', 0)} мс
-
-Сгенерируй еженедельный отчёт в формате JSON со следующими полями:
-- period: {{"from": "...", "to": "..."}}
-- usage_summary: {{"total_requests": 0, "live_mode_pct": 0, "learn_mode_pct": 0}}
-- learning_insights: {{"top_mistakes": [{{"category": "...", "count": 0, "recommendation": "..."}}], "progress_trend": "improving|stable|declining"}}
-- system_health: {{"avg_latency_ms": 0, "error_rate_pct": 0, "recommendations": ["..."]}}
-- actionable_advice: ["..."]
-
-Важно:
-1. Не выдумывай данные. Если данных недостаточно — пиши "недостаточно данных".
-2. Все числа должны соответствовать входным данным.
-3. Рекомендации должны быть конкретными.
-4. Язык отчёта: русский.
-
-Вот JSON:
-"""
-        return prompt
+        # Обновленная реализация:
+        data_str = json.dumps(memory, ensure_ascii=False)
+        return f"Данные для анализа:\n{data_str}"
     
-    def _call_model(self, prompt: str) -> str:
-        """Синхронный вызов модели (обёртка)."""
+    def _call_model(self, prompt: str, profile: str = "inspector") -> str:
+        """Синхронный вызов модели."""
         if not self._loaded:
             raise RuntimeError("Engine not loaded. Call load() first.")
-        return self.llm.analyze(prompt)
+        
+        # Подстановка профиля в системный промпт
+        system_prompt = self.system_prompt.replace("{profile_name}", profile)
+        return self.llm.analyze(prompt, system_prompt=system_prompt)
     
     def _parse_response(self, response: str) -> Dict[str, Any]:
         """Парсит ответ модели с валидацией."""
@@ -111,26 +136,23 @@ class SupervisorEngine:
             raise ValueError(f"Invalid model output: {errors}")
         return data
     
-    def analyze_and_report(self, report_type: str = "weekly") -> str:
+    def analyze_and_report(self, report_type: str = "weekly", profile: str = "inspector") -> str:
         """
         Выполняет полный цикл анализа и генерирует отчёт.
-        
-        Returns:
-            Путь к сгенерированному отчёту
         """
-        logger.info(f"Starting {report_type} analysis...")
+        logger.info(f"Starting {report_type} analysis with profile {profile}...")
         
         # 1. Загружаем memory.json
         memory = self.memory_manager.load()
         
-        # 2. Формируем промпт
+        # 2. Формируем промпт (только данные)
         prompt = self._build_prompt(memory)
         logger.debug(f"Prompt length: {len(prompt)} chars")
         
-        # 3. Вызываем модель
+        # 3. Вызываем модель с системным промптом
         start_time = time.time()
         try:
-            response = self._call_model(prompt)
+            response = self._call_model(prompt, profile=profile)
             elapsed = time.time() - start_time
             logger.info(f"Model inference completed in {elapsed:.2f}s")
         except Exception as e:
@@ -162,6 +184,7 @@ class SupervisorEngine:
     
     def update_memory(self) -> None:
         """Обновляет memory.json на основе новых событий."""
+        # ... (остается без изменений) ...
         logger.info("Updating memory from events...")
         
         # Читаем состояние (offset)
