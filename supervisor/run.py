@@ -166,9 +166,15 @@ def main():
             
     elif args.update_memory:
         logger.info("Update mode: will process events and update memory")
-        # TODO: Phase 7A.6 — полноценная обработка
-        logger.info(f"Events offset: {offset}, count: {event_count}")
-        logger.info("Memory update not yet implemented (Phase 7A.6)")
+        # Полноценная обработка через Engine
+        from supervisor.engine.supervisor_engine import SupervisorEngine
+        from supervisor.llm.qwen_impl import SupervisorQwen
+        
+        # Заглушка LLM, так как нам нужно только обновить память, а не анализировать
+        llm = SupervisorQwen() 
+        engine = SupervisorEngine(llm)
+        engine.update_memory()
+        logger.info("Memory updated successfully")
     else:
         # Стандартный запуск — только статус
         logger.info("Supervisor is ready (observer mode)")

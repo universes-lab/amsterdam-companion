@@ -125,7 +125,7 @@ async def process_message(user_id: str, message_text: str, voice_bytes: bytes = 
         start_rb = time.time()
         response = build_response("live", translated, tts_audio)
         rb_latency = (time.time() - start_rb) * 1000
-        _log_supervisor_event("live_request", direction="ru→nl", latency_ms=rb_latency)
+        _log_supervisor_event("live_request", direction="ru→nl", latency_ms=rb_latency, transcription=text, translation=translated)
     else:
         # текстовый запрос
         if mode == "live":
@@ -136,7 +136,7 @@ async def process_message(user_id: str, message_text: str, voice_bytes: bytes = 
                  # Текстовый перевод в режиме live
                  translated = await translate(message_text, src="ru", dst="nl")
                  response = build_response("live", translated, None)
-                 _log_supervisor_event("live_request", direction="ru→nl", latency_ms=0)
+                 _log_supervisor_event("live_request", direction="ru→nl", latency_ms=0, transcription=message_text, translation=translated)
             rb_latency = 0
         elif mode == "learn":
             # Если это просто команда переключения в learn

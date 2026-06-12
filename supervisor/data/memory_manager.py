@@ -56,6 +56,11 @@ class MemoryManager:
         for phrase, count in new_stats.get("phrases_repeated", {}).items():
             current.setdefault("phrases_repeated", {})[phrase] = current.get("phrases_repeated", {}).get(phrase, 0) + count
         
+        # Обновляем recent_transcriptions (храним последние 50)
+        current.setdefault("recent_transcriptions", [])
+        current["recent_transcriptions"].extend(new_stats.get("recent_transcriptions", []))
+        current["recent_transcriptions"] = current["recent_transcriptions"][-50:]
+        
         # Обновляем direction_usage
         for direction, count in new_stats.get("direction_usage", {}).items():
             current.setdefault("direction_usage", {})[direction] = current.get("direction_usage", {}).get(direction, 0) + count

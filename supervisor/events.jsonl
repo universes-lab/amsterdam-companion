@@ -1,2 +1,4 @@
 {"type":"live_request","direction":"ru-nl","latency_ms":920}
 {"timestamp": "2026-06-11T15:47:37.853000Z", "type": "live_request", "direction": "ru→nl", "latency_ms": 0.0}
+{"timestamp": "2026-06-12T13:56:07.320120Z", "type": "live_request", "direction": "ru→nl", "latency_ms": 0.0}
+{"timestamp": "2026-06-12T13:57:06.439745Z", "type": "live_request", "direction": "ru→nl", "latency_ms": 0}
