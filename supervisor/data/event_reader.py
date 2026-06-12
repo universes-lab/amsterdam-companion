@@ -81,6 +81,10 @@ class EventReader:
             stats["total_requests"] += 1
             
             if event_type == "live_request":
+                # Пропускаем, если помечено как low_confidence
+                if event.get("low_confidence", False):
+                    continue
+                
                 stats["live_mode_requests"] += 1
                 
                 # Собираем текст для анализа

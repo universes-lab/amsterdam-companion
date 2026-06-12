@@ -101,8 +101,8 @@ async def process_message(user_id: str, message_text: str, voice_bytes: bytes = 
             raise
             
         try:
-            text = await transcribe(preprocessed, lang="nl")
-            print(f"[PIPELINE] 3. STT result: '{text}'")
+            text, confidence = await transcribe(preprocessed, lang="nl")
+            print(f"[PIPELINE] 3. STT result: '{text}' (conf: {confidence})")
         except Exception as e:
             print(f"[PIPELINE] STT failed: {e}")
             raise
@@ -125,7 +125,13 @@ async def process_message(user_id: str, message_text: str, voice_bytes: bytes = 
         start_rb = time.time()
         response = build_response("live", translated, tts_audio)
         rb_latency = (time.time() - start_rb) * 1000
-        _log_supervisor_event("live_request", direction="ru→nl", latency_ms=rb_latency, transcription=text, translation=translated)
+        
+        # Log with confidence_score
+        log_data = {"direction":"ru→nl", "latency_ms":rb_latency, "transcription":text, "translation":translated, "confidence_score": confidence}
+        if confidence < 0.7:
+            log_data["low_confidence"] = True
+            
+        _log_supervisor_event("live_request", **log_data)
     else:
         # текстовый запрос
         if mode == "live":
