@@ -32,7 +32,7 @@ class STTEngine:
     def is_loaded(self):
         return self._initialized and self.recognizer is not None
     
-    async def transcribe(self, audio_bytes: bytes, lang: str = "nl") -> tuple[str, float]:
+    async def transcribe(self, audio_bytes: bytes, lang: str = "nl") -> str:
         # Warmup: первый вызов может быть медленным
         # Запуск в отдельном потоке, чтобы не блокировать event loop
         return await asyncio.to_thread(self._sync_transcribe, audio_bytes)
@@ -44,9 +44,7 @@ class STTEngine:
         samples = np.frombuffer(audio_bytes, dtype=np.int16)
         stream.accept_waveform(16000, samples.astype(np.float32) / 32768.0)
         self.recognizer.decode_streams([stream])
-        # Assuming sherpa-onnx OfflineRecognizer result has confidence
-        # If not, this will need adjustment. Assuming typical API structure:
-        return stream.result.text, getattr(stream.result, 'confidence', 1.0)
+        return stream.result.text
 
 # Lazy singleton helper
 _stt_engine = None
@@ -57,7 +55,7 @@ def get_stt_engine():
         _stt_engine = STTEngine()
     return _stt_engine
 
-async def transcribe(audio_bytes: bytes, lang: str = "nl") -> tuple[str, float]:
+async def transcribe(audio_bytes: bytes, lang: str = "nl") -> str:
     """STT Interface for Sherpa-ONNX."""
     engine = get_stt_engine()
     return await engine.transcribe(audio_bytes, lang)
