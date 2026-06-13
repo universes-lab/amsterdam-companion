@@ -69,6 +69,7 @@ class EventReader:
             "stt_failures": 0,
             "translation_failures": 0,
             "tts_failures": 0,
+            "recent_transcriptions": [],
             "phrases_repeated": {},
             "direction_usage": {"ru→nl": 0, "nl→ru": 0},
             "avg_latency_sum": 0,
@@ -80,7 +81,18 @@ class EventReader:
             stats["total_requests"] += 1
             
             if event_type == "live_request":
+                # Фильтрация по confidence_score
+                confidence = event.get("stt_confidence", 1.0)
+                if confidence < 0.7:
+                    continue
+                
                 stats["live_mode_requests"] += 1
+                
+                # Собираем текст для анализа
+                transcription = event.get("transcription")
+                if transcription:
+                    stats["recent_transcriptions"].append(transcription)
+                
                 direction = event.get("direction", "")
                 if direction in stats["direction_usage"]:
                     stats["direction_usage"][direction] += 1
