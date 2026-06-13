@@ -1,5 +1,6 @@
 import sherpa_onnx
 import asyncio
+import math
 from pathlib import Path
 from config.settings import STT_MODEL_PATH
 
@@ -32,7 +33,7 @@ class STTEngine:
     def is_loaded(self):
         return self._initialized and self.recognizer is not None
     
-    async def transcribe(self, audio_bytes: bytes, lang: str = "nl") -> str:
+    async def transcribe(self, audio_bytes: bytes, lang: str = "nl") -> tuple[str, float]:
         # Warmup: первый вызов может быть медленным
         # Запуск в отдельном потоке, чтобы не блокировать event loop
         return await asyncio.to_thread(self._sync_transcribe, audio_bytes)
@@ -44,7 +45,14 @@ class STTEngine:
         samples = np.frombuffer(audio_bytes, dtype=np.int16)
         stream.accept_waveform(16000, samples.astype(np.float32) / 32768.0)
         self.recognizer.decode_streams([stream])
-        return stream.result.text
+        
+        result = stream.result
+        # Извлечение confidence (avg_logprob — стандартный параметр Whisper)
+        # Чем выше avg_logprob (от -inf до 0), тем выше уверенность.
+        # Нормализуем в диапазон 0-1: exp(avg_logprob) даёт значение около 0-1.
+        confidence = math.exp(result.avg_logprob) if hasattr(result, 'avg_logprob') else 0.5
+        
+        return result.text, confidence
 
 # Lazy singleton helper
 _stt_engine = None
@@ -55,7 +63,7 @@ def get_stt_engine():
         _stt_engine = STTEngine()
     return _stt_engine
 
-async def transcribe(audio_bytes: bytes, lang: str = "nl") -> str:
+async def transcribe(audio_bytes: bytes, lang: str = "nl") -> tuple[str, float]:
     """STT Interface for Sherpa-ONNX."""
     engine = get_stt_engine()
     return await engine.transcribe(audio_bytes, lang)
