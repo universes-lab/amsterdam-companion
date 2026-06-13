@@ -60,7 +60,7 @@ async def run_pipeline(audio_bytes: bytes, user_id: str) -> bytes:
     
     # Transcribe
     start = time.perf_counter()
-    text = await transcribe(preprocessed_audio, lang="nl")
+    text, confidence = await transcribe(preprocessed_audio, lang="nl")
     await log_latency("transcribe", (time.perf_counter() - start) * 1000)
     
     # Translate
@@ -73,7 +73,7 @@ async def run_pipeline(audio_bytes: bytes, user_id: str) -> bytes:
     audio_response = await speak(translated_text, lang="ru")
     await log_latency("speak", (time.perf_counter() - start) * 1000)
     
-    print(f"[Pipeline] Finished for {user_id}.")
+    print(f"[Pipeline] Finished for {user_id}. STT conf: {confidence}")
     return audio_response
 
 async def process_message(user_id: str, message_text: str, voice_bytes: bytes = None):
@@ -101,8 +101,8 @@ async def process_message(user_id: str, message_text: str, voice_bytes: bytes = 
             raise
             
         try:
-            text = await transcribe(preprocessed, lang="nl")
-            print(f"[PIPELINE] 3. STT result: '{text}'")
+            text, confidence = await transcribe(preprocessed, lang="nl")
+            print(f"[PIPELINE] 3. STT result: '{text}' (conf: {confidence})")
         except Exception as e:
             print(f"[PIPELINE] STT failed: {e}")
             raise
@@ -125,7 +125,7 @@ async def process_message(user_id: str, message_text: str, voice_bytes: bytes = 
         start_rb = time.time()
         response = build_response("live", translated, tts_audio)
         rb_latency = (time.time() - start_rb) * 1000
-        _log_supervisor_event("live_request", direction="ru→nl", latency_ms=rb_latency)
+        _log_supervisor_event("live_request", direction="ru→nl", latency_ms=rb_latency, stt_confidence=confidence)
     else:
         # текстовый запрос
         if mode == "live":
