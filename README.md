@@ -38,3 +38,25 @@ supervisor/
 
 - **ffmpeg not found:** Ensure `ffmpeg` is installed and in your system PATH.
 - **Model not found:** Make sure you have run the conversion script in Step 3.
+
+
+🎌 ДИПСИК:
+
+Проект amsterdam-companion официально завершён. Все цепочки рассуждений по нему сворачиваются.
+✅ ФИНАЛЬНЫЙ СТАТУС ПРОЕКТА
+yaml
+
+Project: amsterdam-companion
+Status: COMPLETED ✅
+Final_Version: Phase 7B.2
+Repository: https://github.com/universes-lab/amsterdam-companion
+
+Итоговые возможности:
+  - LIVE Mode: Голосовой перевод RU ↔ NL
+  - LEARNING Mode: Помощь в изучении нидерландского
+  - Supervisor (Observer): Анализ статистики, отчёты, фильтрация мусора
+  - Стабильность: Подтверждена, бот работает
+
+Известные ограничения (приняты):
+  - STT: Whisper-tiny (достаточно для базового использования)
+  - Supervisor: Observer mode (без автономных действий)

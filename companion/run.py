@@ -1,9 +1,8 @@
-#!/usr/bin/env python
 """
-Точка входа Supervisor Layer (Phase 7A).
+Точка входа Companion Layer (Phase 7A).
 
 Запуск:
-    python supervisor/run.py
+    python companion/run.py
 
 При первом запуске создаёт файловую структуру и логирует состояние.
 """
@@ -16,7 +15,7 @@ from pathlib import Path
 from datetime import datetime
 
 # Настройка логирования
-LOG_FILE = Path("supervisor/supervisor.log")
+LOG_FILE = Path("companion/companion.log")
 LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
 
 logging.basicConfig(
@@ -33,13 +32,13 @@ logger = logging.getLogger(__name__)
 def setup_directories() -> None:
     """Гарантирует существование всех необходимых директорий."""
     dirs = [
-        "supervisor/reports",
-        "supervisor/archive",
-        "supervisor/recommendations",
-        "supervisor/data",
-        "supervisor/engine",
-        "supervisor/llm",
-        "supervisor/tests",
+        "companion/reports",
+        "companion/archive",
+        "companion/recommendations",
+        "companion/data",
+        "companion/engine",
+        "companion/llm",
+        "companion/tests",
     ]
     for d in dirs:
         Path(d).mkdir(parents=True, exist_ok=True)
@@ -48,7 +47,7 @@ def setup_directories() -> None:
 
 def load_memory() -> dict:
     """Загружает memory.json, создаёт пустой если нет."""
-    memory_file = Path("supervisor/memory.json")
+    memory_file = Path("companion/memory.json")
     if not memory_file.exists():
         logger.info("Memory file not found, creating empty")
         empty_memory = {
@@ -85,7 +84,7 @@ def load_memory() -> dict:
 
 def load_events() -> tuple[int, list]:
     """Загружает events.jsonl и возвращает (offset, count)."""
-    events_file = Path("supervisor/events.jsonl")
+    events_file = Path("companion/events.jsonl")
     if not events_file.exists():
         logger.info("Events file not found, will be created on first bot request")
         return 0, 0
@@ -103,7 +102,7 @@ def load_events() -> tuple[int, list]:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="AI Supervisor for amsterdam-companion")
+    parser = argparse.ArgumentParser(description="AI Companion for amsterdam-companion")
     parser.add_argument("--update-memory", action="store_true",
                         help="Обновить memory.json из events.jsonl и выйти")
     parser.add_argument("--schedule", action="store_true",
@@ -111,7 +110,7 @@ def main():
     args = parser.parse_args()
     
     logger.info("=" * 50)
-    logger.info("Supervisor started")
+    logger.info("Companion started")
     logger.info(f"Args: {args}")
     
     # Проверка структуры
@@ -128,18 +127,18 @@ def main():
         def scheduled_update():
             logger.info("Scheduled update started")
             # Обновляем memory.json из events.jsonl
-            from supervisor.data.event_reader import EventReader
-            from supervisor.data.memory_manager import MemoryManager
+            from companion.data.event_reader import EventReader
+            from companion.data.memory_manager import MemoryManager
             
-            events_file = Path("supervisor/events.jsonl")
-            memory_file = Path("supervisor/memory.json")
-            archive_dir = Path("supervisor/archive")
+            events_file = Path("companion/events.jsonl")
+            memory_file = Path("companion/memory.json")
+            archive_dir = Path("companion/archive")
             
             reader = EventReader(events_file)
             manager = MemoryManager(memory_file, archive_dir)
             
             # Читаем состояние (offset)
-            state_file = Path("supervisor/state.json")
+            state_file = Path("companion/state.json")
             last_offset = 0
             if state_file.exists():
                 with open(state_file, 'r') as f:
@@ -171,14 +170,10 @@ def main():
         logger.info("Memory update not yet implemented (Phase 7A.6)")
     else:
         # Стандартный запуск — только статус
-        logger.info("Supervisor is ready (observer mode)")
+        logger.info("Companion is ready (companion mode)")
         logger.info(f"Memory version: {memory.get('version', 'unknown')}")
         logger.info(f"Total requests tracked: {memory.get('total_requests', 0)}")
         logger.info(f"Events in queue: {event_count}")
     
-    logger.info("Supervisor finished")
+    logger.info("Companion finished")
     logger.info("=" * 50)
-
-
-if __name__ == "__main__":
-    main()

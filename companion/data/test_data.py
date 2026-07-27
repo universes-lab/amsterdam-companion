@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
-from supervisor.data.event_reader import EventReader
-from supervisor.data.memory_manager import MemoryManager
+from companion.data.event_reader import EventReader
+from companion.data.memory_manager import MemoryManager
 
 def run_test():
     events_file = Path('supervisor/events.jsonl')

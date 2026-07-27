@@ -1,8 +1,8 @@
 from typing import Optional
 from pathlib import Path
 from llama_cpp import Llama
-from supervisor.llm.base import SupervisorLLM
-from supervisor.config.settings import MODEL_PATH, N_GPU_LAYERS, N_CTX, N_BATCH
+from companion.llm.base import SupervisorLLM
+from companion.config.settings import MODEL_PATH, N_GPU_LAYERS, N_CTX, N_BATCH
 
 class SupervisorQwen(SupervisorLLM):
     """Реализация SupervisorLLM через Qwen GGUF."""

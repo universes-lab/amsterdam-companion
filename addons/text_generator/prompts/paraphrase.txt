@@ -1,5 +1,19 @@
-Ты — генератор учебных текстов. Получи текст на {source_language} языке: {input_text}.
-Перепиши его в {variants} различных вариантах на {target_language} языке (уровень {level}).
-Каждый вариант должен использовать разные слова и конструкции, но сохранять смысл.
-Стили: {style}, жанр: {genre}, форма: {form}, длина: {length}.
-DO NOT OUTPUT ANY THINKING PROCESS. Output ONLY the {variants} variants, separated by "--- Variant X ---".
+You are an expert creative writer.
+Task: Write {variants} creative variations of a short text based on: "{input_text}".
+Topic/Keyword to include: "{topic}".
+
+Instructions for the thinking process:
+Use the <think> block to deeply analyze the context, brainstorm how to organically weave the keyword "{topic}" into the narrative, and explore creative angles for the content.
+
+Instructions for the final output:
+After the <think> block, provide only the final generated variations.
+Each variation should be a complete short story or dialogue.
+Ensure the variations are natural, creative, and strictly include the keyword "{topic}".
+Output Format:
+---
+[Variation 1 text]
+---
+[Variation 2 text]
+---
+[Variation 3 text]
+---

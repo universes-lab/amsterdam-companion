@@ -12,13 +12,13 @@ from datetime import datetime
 router = Router()
 task_registry = TaskRegistry()
 
-SUPERVISOR_MEMORY_FILE = Path("supervisor/memory.json")
-SUPERVISOR_REPORTS_DIR = Path("supervisor/reports")
-SUPERVISOR_RUN_SCRIPT = Path("supervisor/run.py")
-SUPERVISOR_ENGINE_SCRIPT = Path("supervisor/tests/test_engine.py")
+SUPERVISOR_MEMORY_FILE = Path("companion/memory.json")
+SUPERVISOR_REPORTS_DIR = Path("companion/reports")
+SUPERVISOR_RUN_SCRIPT = Path("companion/run.py")
+SUPERVISOR_ENGINE_SCRIPT = Path("companion/tests/test_engine.py")
 
 def get_supervisor_status() -> dict:
-    """Возвращает статус Supervisor (читает memory.json)."""
+    """Возвращает статус Companion (читает memory.json)."""
     if not SUPERVISOR_MEMORY_FILE.exists():
         return {"status": "NOT_INITIALIZED", "last_report": None, "errors": 0}
     
@@ -67,7 +67,7 @@ def get_stats_summary() -> str:
     except Exception as e:
         return f"❌ Ошибка чтения статистики: {e}"
 
-@router.message(Command("supervisor_report"))
+@router.message(Command("companion_report"))
 async def cmd_supervisor_report(message: types.Message):
     """Генерирует еженедельный отчёт."""
     status_msg = await message.answer("🔄 Генерация отчёта... Пожалуйста, подождите.")
@@ -97,12 +97,12 @@ async def cmd_supervisor_report(message: types.Message):
     except Exception as e:
         await status_msg.edit_text(f"❌ Ошибка: {e}")
 
-@router.message(Command("supervisor_stats"))
+@router.message(Command("companion_stats"))
 async def cmd_supervisor_stats(message: types.Message):
     stats = get_stats_summary()
     await message.answer(stats)
 
-@router.message(Command("supervisor_analyze"))
+@router.message(Command("companion_analyze"))
 async def cmd_supervisor_analyze(message: types.Message):
     status_msg = await message.answer("🔄 Обновление статистики...")
     try:
@@ -126,10 +126,11 @@ Uptime: {status['uptime_seconds']:.0f}s
 RAM: {status['ram_mb']:.0f} MB
 Status: {status['status']}
 
-🤖 **Supervisor Status**
+🤖 **Companion Status**
 - Статус: {sup_status.get('status', 'UNKNOWN')}
 """
     await message.answer(text)
+
 
 @router.message(lambda msg: msg.text and msg.text.startswith("/"))
 async def cmd_handler(message: types.Message):

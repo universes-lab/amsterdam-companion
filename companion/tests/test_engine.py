@@ -11,9 +11,9 @@ from pathlib import Path
 # Добавляем корень проекта в путь
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from supervisor.llm.qwen_impl import SupervisorQwen
-from supervisor.engine.supervisor_engine import SupervisorEngine
-from supervisor.config.settings import MODEL_PATH, N_GPU_LAYERS, N_CTX, N_BATCH
+from companion.llm.qwen_impl import SupervisorQwen
+from companion.engine.companion_engine import CompanionEngine
+from companion.config.settings import MODEL_PATH, N_GPU_LAYERS, N_CTX, N_BATCH
 
 def setup_test_memory():
     """Создаёт тестовый memory.json."""

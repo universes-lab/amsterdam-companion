@@ -1,15 +1,15 @@
 import argparse
-import json
+import sys
 import os
+import re
 from src.load_model import get_model
 from src.config import DEFAULT_PARAMS
 
-def get_paraphrase_prompt(input_text, variants, target_language, level, style, genre, form, length):
+def get_paraphrase_prompt(input_text, variants, target_language, level, style, genre, form, length, topic):
     prompt_path = os.path.join(os.path.dirname(__file__), "prompts", "paraphrase.txt")
     with open(prompt_path, "r", encoding="utf-8") as f:
         template = f.read()
     return template.format(
-        source_language="русском", # Assuming Russian input based on example
         input_text=input_text,
         variants=variants,
         target_language=target_language,
@@ -17,43 +17,46 @@ def get_paraphrase_prompt(input_text, variants, target_language, level, style, g
         style=style,
         genre=genre,
         form=form,
-        length=length
+        length=length,
+        topic=topic
     )
 
 def generate_text(args):
     model = get_model()
     
-    # Build prompt
-    if args.input_text:
-        user_prompt = get_paraphrase_prompt(args.input_text, args.variants, args.target_language, args.level, args.style, args.genre, args.form, args.length)
-    elif args.input:
-        with open(args.input, "r", encoding="utf-8") as f:
-            input_text = f.read()
-        user_prompt = get_paraphrase_prompt(input_text, args.variants, args.target_language, args.level, args.style, args.genre, args.form, args.length)
-    else:
-        user_prompt = f"Topic: {args.topic}\nLevel: {args.level}\nStyle: {args.style}\nGenerate {args.variants} natural text variants for this situation.\n\n"
-        
-    system_prompt = "You are a helpful text generator. Output the requested text directly, without any thinking process."
+    # Use topic as the core keyword/concept if input_text is empty
+    input_text = args.input_text or ""
+    topic = args.topic or ""
     
+    user_prompt = get_paraphrase_prompt(
+        input_text=input_text,
+        variants=args.variants,
+        target_language=args.target_language,
+        level=args.level,
+        style=args.style,
+        genre=args.genre,
+        form=args.form,
+        length=args.length,
+        topic=topic
+    )
+    
+    # Add an explicit instruction to continue after thinking
     response = model.create_chat_completion(
         messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
+            {"role": "user", "content": user_prompt + "\n\nContinue immediately after </think> with the generated variations."}
         ],
-        temperature=DEFAULT_PARAMS["temperature"],
-        max_tokens=DEFAULT_PARAMS["max_tokens"],
+        temperature=0.7,
+        max_tokens=1024, # Increased to allow space for thinking + text
         top_p=DEFAULT_PARAMS["top_p"]
     )
 
     text = response['choices'][0]['message']['content']
     
-    # Post-processing to remove <think> blocks
+    # Keep the content after the thinking process, if it exists
     if "</think>" in text:
         text = text.split("</think>")[-1]
-    elif "<think>" in text:
-        text = text.split("<think>")[-1]
     
-    return [text]
+    return text.strip()
 
 def main():
     parser = argparse.ArgumentParser(description="Companion Text Generator CLI")
@@ -68,23 +71,29 @@ def main():
     parser.add_argument("--length", default="short", help="Length")
     parser.add_argument("--target-language", default="nl", help="Target language")
     parser.add_argument("--output", help="Output file path")
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
     
     args = parser.parse_args()
     
     if not args.topic and not args.input and not args.input_text:
         parser.error("You must provide either --topic, --input, or --input-text")
         
-    print(f"Generating variants...")
-    variants = generate_text(args)
+    if args.verbose:
+        sys.stderr.write("Generating variants...\n")
+        
+    text = generate_text(args)
     
     if args.output:
-        with open(args.output, "w", encoding="utf-8") as f:
-            for i, v in enumerate(variants):
-                f.write(f"--- Variant {i+1} ---\n{v}\n\n")
-        print(f"Variants saved to {args.output}")
+        # Use utf-8-sig for Windows compatibility (BOM)
+        with open(args.output, "w", encoding="utf-8-sig") as f:
+            f.write(text)
+            f.flush()
+            os.fsync(f.fileno())
+        if args.verbose:
+            sys.stderr.write(f"Variants saved to {args.output}\n")
     else:
-        for i, v in enumerate(variants):
-            print(f"\n--- Variant {i+1} ---\n{v}")
+        print(text)
+        sys.stdout.flush()
 
 if __name__ == "__main__":
     main()

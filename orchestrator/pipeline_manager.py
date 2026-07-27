@@ -12,10 +12,10 @@ from orchestrator.response_builder import build_response
 from session.session_manager import SessionManager
 from config.settings import LOGS_PATH
 
-SUPERVISOR_EVENTS_FILE = Path("supervisor/events.jsonl")
+SUPERVISOR_EVENTS_FILE = Path("companion/events.jsonl")
 
 def _log_supervisor_event(event_type: str, **kwargs):
-    """Записывает событие в events.jsonl для Supervisor."""
+    """Записывает событие в events.jsonl для Companion."""
     try:
         SUPERVISOR_EVENTS_FILE.parent.mkdir(parents=True, exist_ok=True)
         event = {
@@ -26,7 +26,8 @@ def _log_supervisor_event(event_type: str, **kwargs):
         with open(SUPERVISOR_EVENTS_FILE, "a", encoding="utf-8") as f:
             f.write(json.dumps(event, ensure_ascii=False) + "\n")
     except Exception as e:
-        print(f"Failed to log supervisor event: {e}")
+        print(f"Failed to log companion event: {e}")
+
 
 LATENCY_LOG = LOGS_PATH / "latency.log"
 LATENCY_LOG.parent.mkdir(parents=True, exist_ok=True)

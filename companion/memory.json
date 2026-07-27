@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "period": {
+    "from": "2026-07-01T00:00:00Z",
+    "to": "2026-07-07T23:59:59Z"
+  },
+  "total_requests": 50,
+  "live_mode_requests": 30,
+  "learn_mode_requests": 20,
+  "stt_failures": 1,
+  "translation_failures": 0,
+  "tts_failures": 0,
+  "phrases_repeated": {
+    "dank u wel": 5,
+    "alstublieft": 3
+  },
+  "system_health": {
+    "avg_latency_ms": 450,
+    "uptime_hours": 24
+  }
+}
